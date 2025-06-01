@@ -45,6 +45,8 @@ if not os.path.exists(".screenshots"):
 api.mount("/screenshots", StaticFiles(directory=".screenshots"), name="screenshots")
 
 def initialize_system():
+    if not os.path.exists(config["MAIN"]["work_dir"]):
+        os.makedirs(config["MAIN"]["work_dir"])
     stealth_mode = config.getboolean('BROWSER', 'stealth_mode')
     personality_folder = "jarvis" if config.getboolean('MAIN', 'jarvis_personality') else "base"
     languages = config["MAIN"]["languages"].split(' ')
