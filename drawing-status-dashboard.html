@@ -1,0 +1,1411 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drawing Status Dashboard v6.1</title>
+    <style>
+        /* CSS for styling the page */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f9;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        .header-container {
+            max-width: 95%;
+            margin: auto;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        .view-switcher {
+            margin-bottom: 20px;
+        }
+        .view-switcher button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border: 1px solid #bdc3c7;
+            background-color: #ecf0f1;
+            color: #7f8c8d;
+            border-radius: 5px;
+            margin: 0 5px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .view-switcher button:hover {
+            background-color: #dbe4e8;
+        }
+        .view-switcher button.active {
+            background-color: #34495e;
+            color: white;
+            border-color: #34495e;
+        }
+        .container {
+            max-width: 95%;
+            margin: auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        #designerView {
+            overflow-x: auto; /* Allows horizontal scrolling */
+        }
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .toolbar-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .search-box {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 250px;
+        }
+        .toolbar button {
+            padding: 8px 15px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .toolbar button:hover {
+            background-color: #2980b9;
+        }
+        .toolbar button.secondary {
+            background-color: #95a5a6;
+        }
+        .toolbar button.secondary:hover {
+            background-color: #7f8c8d;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px 12px;
+            text-align: left;
+            vertical-align: middle;
+            white-space: nowrap; /* Prevents text wrapping */
+        }
+        th {
+            background-color: #34495e;
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            cursor: pointer;
+            user-select: none;
+        }
+        th:hover {
+            background-color: #2c3e50;
+        }
+        th .sort-indicator {
+            margin-left: 5px;
+            opacity: 0.5;
+        }
+        th.sorted-asc .sort-indicator,
+        th.sorted-desc .sort-indicator {
+            opacity: 1;
+        }
+        .filter-input {
+            width: 95%;
+            padding: 6px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        tr:hover {
+            background-color: #e8f4f8;
+        }
+        .status-cell {
+            cursor: pointer;
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            transition: transform 0.2s;
+            position: relative;
+        }
+        .status-cell:hover {
+            transform: scale(1.2);
+        }
+        .status-cell:focus {
+            outline: 2px solid #3498db;
+            outline-offset: 2px;
+            border-radius: 4px;
+        }
+        .status-unchecked::before { content: '☐'; color: #bdc3c7; }
+        .status-checked::before { content: '✅'; color: #2ecc71; }
+        .status-progress::before { content: '🔄'; color: #f39c12; }
+        
+        .maker-cell {
+            font-weight: bold;
+            padding: 8px;
+            text-align: center;
+            border-radius: 4px;
+            color: white;
+        }
+        /* Colors for each Maker */
+        .maker-tAC { background-color: #3498db; }
+        .maker-gate-asia { background-color: #e67e22; }
+        .maker-mT400 { background-color: #9b59b6; }
+        .maker-happy-day { background-color: #1abc9c; }
+
+        /* Manager View Styles */
+        #managerView {
+            display: none;
+        }
+        .manager-section {
+            margin-bottom: 30px;
+        }
+        .manager-section h2 {
+            border-bottom: 2px solid #34495e;
+            padding-bottom: 10px;
+            color: #34495e;
+        }
+        .progress-item {
+            margin-bottom: 15px;
+        }
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .progress-bar-container {
+            width: 100%;
+            background-color: #ecf0f1;
+            border-radius: 5px;
+            height: 25px;
+        }
+        .progress-bar {
+            width: 0;
+            height: 100%;
+            background-color: #2ecc71;
+            border-radius: 5px;
+            text-align: center;
+            line-height: 25px;
+            color: white;
+            font-weight: bold;
+            transition: width 0.5s ease-in-out;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #7f8c8d;
+        }
+        
+        /* Notification Styles */
+        .notification-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            max-width: 300px;
+        }
+        .notification {
+            background-color: #2ecc71;
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            animation: slideIn 0.3s ease-out;
+        }
+        .notification.error {
+            background-color: #e74c3c;
+        }
+        .notification.warning {
+            background-color: #f39c12;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        /* Batch Operations Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: #fff;
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 50%;
+            max-width: 500px;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .close-modal {
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .modal-body {
+            margin-bottom: 20px;
+        }
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        
+        /* History Panel */
+        .history-panel {
+            margin-top: 20px;
+            border-top: 1px solid #ddd;
+            padding-top: 20px;
+        }
+        .history-item {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            font-size: 12px;
+        }
+        .history-time {
+            color: #7f8c8d;
+            margin-right: 10px;
+        }
+
+        /* Screen-reader only text */
+        .sr-only {
+            position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+            overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header-container">
+        <h1>Drawing Status Dashboard</h1>
+        <div class="view-switcher">
+            <button id="showDesignerBtn" class="active">✏️ Designer View</button>
+            <button id="showManagerBtn">📊 Manager View</button>
+        </div>
+    </div>
+
+    <div id="designerView" class="container">
+        <div class="toolbar">
+            <div class="toolbar-group">
+                <input type="text" id="globalSearch" class="search-box" placeholder="Search all columns...">
+                <button id="clearFilters">Clear Filters</button>
+            </div>
+            <div class="toolbar-group">
+                <button id="batchUpdate">Batch Update</button>
+                <button id="exportData" class="secondary">Export to CSV</button>
+                <button id="showHistory" class="secondary">Show History</button>
+            </div>
+        </div>
+        
+        <table id="drawingTable">
+            <caption class="sr-only">Drawing items with statuses and metadata</caption>
+            <thead>
+                <tr>
+                    <th scope="col" data-column="0" aria-sort="none">No.<span class="sort-indicator">⇅</span><br><input type="text" class="filter-input" data-column="0" placeholder="Filter..."></th>
+                    <th scope="col" data-column="1" aria-sort="none">Part name<span class="sort-indicator">⇅</span><br><input type="text" class="filter-input" data-column="1" placeholder="Filter..."></th>
+                    <th scope="col" data-column="2" aria-sort="none">New (22-08-2025)<span class="sort-indicator">⇅</span><br><input type="text" class="filter-input" data-column="2" placeholder="Filter..."></th>
+                    <th scope="col" data-column="3" aria-sort="none">Final(11-09-25)<span class="sort-indicator">⇅</span><br><input type="text" class="filter-input" data-column="3" placeholder="Filter..."></th>
+                    <th scope="col" data-column="4" aria-sort="none">Specification<span class="sort-indicator">⇅</span><br><input type="text" class="filter-input" data-column="4" placeholder="Filter..."></th>
+                    <th scope="col" data-column="5" aria-sort="none">Line<span class="sort-indicator">⇅</span></th>
+                    <th scope="col" data-column="6" aria-sort="none">GQS<span class="sort-indicator">⇅</span></th>
+                    <th scope="col" data-column="7" aria-sort="none">P/O<span class="sort-indicator">⇅</span></th>
+                    <th scope="col" data-column="8" aria-sort="none">PIC<span class="sort-indicator">⇅</span><br><input type="text" class="filter-input" data-column="8" placeholder="Filter..."></th>
+                    <th scope="col" data-column="9" aria-sort="none">Remark<span class="sort-indicator">⇅</span><br><input type="text" class="filter-input" data-column="9" placeholder="Filter..."></th>
+                    <th scope="col" data-column="10" aria-sort="none">Maker<span class="sort-indicator">⇅</span><br><input type="text" class="filter-input" data-column="10" placeholder="Filter..."></th>
+                    <th scope="col" data-column="11" aria-sort="none">DWG<span class="sort-indicator">⇅</span></th>
+                    <th scope="col" data-column="12" aria-sort="none">SDRW<span class="sort-indicator">⇅</span></th>
+                    <th scope="col" data-column="13" aria-sort="none">DXF<span class="sort-indicator">⇅</span></th>
+                    <th scope="col" data-column="14" aria-sort="none">3D<span class="sort-indicator">⇅</span></th>
+                    <th scope="col" data-column="15" aria-sort="none">PDF<span class="sort-indicator">⇅</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Table data is populated here. Example row: -->
+                <tr>
+                    <td>1</td>
+                    <td>XAE768-0111A</td>
+                    <td>XAE768-0411</td>
+                    <td>XAS137-0111</td>
+                    <td>STR plate</td>
+                    <td class="status-cell" data-row="1" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td>
+                    <td class="status-cell" data-row="1" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td>
+                    <td class="status-cell" data-row="1" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td>
+                    <td>Kittanun</td>
+                    <td>Block 3</td>
+                    <td class="maker-cell maker-tAC">TAC</td>
+                    <td class="status-cell" data-row="1" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td>
+                    <td class="status-cell" data-row="1" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td>
+                    <td class="status-cell" data-row="1" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td>
+                    <td class="status-cell" data-row="1" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td>
+                    <td class="status-cell" data-row="1" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td>
+                </tr>
+                 <tr>
+                    <td>2</td>
+                    <td>XAE768-0112</td>
+                    <td>XAE768-0412</td>
+                    <td>XAS137-0112</td>
+                    <td>STR backing plate</td>
+                    <td class="status-cell" data-row="2" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td>
+                    <td class="status-cell" data-row="2" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td>
+                    <td class="status-cell" data-row="2" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td>
+                    <td>Kittanun</td>
+                    <td>Block 3</td>
+                    <td class="maker-cell maker-gate-asia">Gate asia</td>
+                    <td class="status-cell" data-row="2" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td>
+                    <td class="status-cell" data-row="2" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td>
+                    <td class="status-cell" data-row="2" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td>
+                    <td class="status-cell" data-row="2" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td>
+                    <td class="status-cell" data-row="2" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td>
+                </tr>
+                <tr>
+                    <td>3</td>
+                    <td>XAE768-0113A</td>
+                    <td>XAE768-0413</td>
+                    <td>XAS137-0113</td>
+                    <td>Punch plate</td>
+                    <td class="status-cell" data-row="3" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td>
+                    <td class="status-cell" data-row="3" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td>
+                    <td class="status-cell" data-row="3" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td>
+                    <td></td>
+                    <td>Original</td>
+                    <td class="maker-cell maker-tAC">TAC</td>
+                    <td class="status-cell" data-row="3" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td>
+                    <td class="status-cell" data-row="3" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td>
+                    <td class="status-cell" data-row="3" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td>
+                    <td class="status-cell" data-row="3" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td>
+                    <td class="status-cell" data-row="3" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td>
+                </tr>
+                <tr>
+                    <td>4</td>
+                    <td>XAE768-0114</td>
+                    <td>XAE768-0414</td>
+                    <td>XAS137-0114</td>
+                    <td>Punch backing plate</td>
+                    <td class="status-cell" data-row="4" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td>
+                    <td class="status-cell" data-row="4" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td>
+                    <td class="status-cell" data-row="4" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td>
+                    <td>Kittanun</td>
+                    <td>Block 3</td>
+                    <td class="maker-cell maker-gate-asia">Gate asia</td>
+                    <td class="status-cell" data-row="4" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td>
+                    <td class="status-cell" data-row="4" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td>
+                    <td class="status-cell" data-row="4" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td>
+                    <td class="status-cell" data-row="4" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td>
+                    <td class="status-cell" data-row="4" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td>
+                </tr>
+                <tr>
+                    <td>5</td>
+                    <td>XAE768-0115</td>
+                    <td>XAE768-0415</td>
+                    <td>XAS137-0115</td>
+                    <td>Punch holder</td>
+                    <td class="status-cell" data-row="5" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td>
+                    <td class="status-cell" data-row="5" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td>
+                    <td class="status-cell" data-row="5" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td>
+                    <td></td>
+                    <td>Original</td>
+                    <td class="maker-cell maker-gate-asia">Gate asia</td>
+                    <td class="status-cell" data-row="5" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td>
+                    <td class="status-cell" data-row="5" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td>
+                    <td class="status-cell" data-row="5" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td>
+                    <td class="status-cell" data-row="5" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td>
+                    <td class="status-cell" data-row="5" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td>
+                </tr>
+                <tr>
+                    <td>6</td>
+                    <td>XAE768-9116A</td>
+                    <td>XAE768-0416</td>
+                    <td>XAS137-0116</td>
+                    <td>Side cut punch1</td>
+                    <td class="status-cell" data-row="6" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td>
+                    <td class="status-cell" data-row="6" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td>
+                    <td class="status-cell" data-row="6" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td>
+                    <td>Nakarin</td>
+                    <td>Block 1</td>
+                    <td class="maker-cell maker-mT400">MT400</td>
+                    <td class="status-cell" data-row="6" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td>
+                    <td class="status-cell" data-row="6" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td>
+                    <td class="status-cell" data-row="6" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td>
+                    <td class="status-cell" data-row="6" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td>
+                    <td class="status-cell" data-row="6" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td>
+                </tr>
+                <tr>
+                    <td>7</td>
+                    <td>XAE768-9117A</td>
+                    <td>XAE768-0417</td>
+                    <td>XAS137-0117</td>
+                    <td>Side cut punch2</td>
+                    <td class="status-cell" data-row="7" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td>
+                    <td class="status-cell" data-row="7" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td>
+                    <td class="status-cell" data-row="7" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td>
+                    <td>Nakarin</td>
+                    <td>Block 1</td>
+                    <td class="maker-cell maker-mT400">MT400</td>
+                    <td class="status-cell" data-row="7" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td>
+                    <td class="status-cell" data-row="7" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td>
+                    <td class="status-cell" data-row="7" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td>
+                    <td class="status-cell" data-row="7" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td>
+                    <td class="status-cell" data-row="7" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td>
+                </tr>
+                <tr>
+                    <td>8</td>
+                    <td>XAE768-0119C</td>
+                    <td>XAE768-0419</td>
+                    <td>XAS137-0119</td>
+                    <td>Small window cutting punch</td>
+                    <td class="status-cell" data-row="8" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td>
+                    <td class="status-cell" data-row="8" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td>
+                    <td class="status-cell" data-row="8" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td>
+                    <td>Pongporn</td>
+                    <td>Block 2</td>
+                    <td class="maker-cell maker-mT400">MT400</td>
+                    <td class="status-cell" data-row="8" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td>
+                    <td class="status-cell" data-row="8" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td>
+                    <td class="status-cell" data-row="8" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td>
+                    <td class="status-cell" data-row="8" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td>
+                    <td class="status-cell" data-row="8" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td>
+                </tr>
+                <tr>
+                    <td>9</td>
+                    <td>XAE768-0120A</td>
+                    <td>XAE768-0420</td>
+                    <td>XAS137-0120</td>
+                    <td>External cutting punch 1</td>
+                    <td class="status-cell" data-row="9" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td>
+                    <td class="status-cell" data-row="9" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td>
+                    <td class="status-cell" data-row="9" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td>
+                    <td>Pongporn</td>
+                    <td>Block 2</td>
+                    <td class="maker-cell maker-happy-day">Happy day</td>
+                    <td class="status-cell" data-row="9" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td>
+                    <td class="status-cell" data-row="9" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td>
+                    <td class="status-cell" data-row="9" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td>
+                    <td class="status-cell" data-row="9" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td>
+                    <td class="status-cell" data-row="9" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td>
+                </tr>
+                <tr>
+                    <td>10</td>
+                    <td>XAE768-0121A</td>
+                    <td>XAE768-0421</td>
+                    <td>XAS137-0121</td>
+                    <td>External cutting punch2-1</td>
+                    <td class="status-cell" data-row="10" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td>
+                    <td class="status-cell" data-row="10" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td>
+                    <td class="status-cell" data-row="10" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td>
+                    <td>Kittanun</td>
+                    <td>Block 3</td>
+                    <td class="maker-cell maker-happy-day">Happy day</td>
+                    <td class="status-cell" data-row="10" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td>
+                    <td class="status-cell" data-row="10" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td>
+                    <td class="status-cell" data-row="10" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td>
+                    <td class="status-cell" data-row="10" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td>
+                    <td class="status-cell" data-row="10" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td>
+                </tr>
+                <tr>
+                    <td>11</td>
+                    <td>XAE768-0122A</td>
+                    <td>XAE768-0422</td>
+                    <td>XAS137-0122</td>
+                    <td>External cutting punch2-2</td>
+                    <td class="status-cell" data-row="11" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td>
+                    <td class="status-cell" data-row="11" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td>
+                    <td class="status-cell" data-row="11" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td>
+                    <td>Kittanun</td>
+                    <td>Block 3</td>
+                    <td class="maker-cell maker-happy-day">Happy day</td>
+                    <td class="status-cell" data-row="11" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td>
+                    <td class="status-cell" data-row="11" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td>
+                    <td class="status-cell" data-row="11" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td>
+                    <td class="status-cell" data-row="11" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td>
+                    <td class="status-cell" data-row="11" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td>
+                </tr>
+                <tr>
+                    <td>12</td>
+                    <td>XAE768-9123A</td>
+                    <td>XAE768-0423</td>
+                    <td>XAS137-0123</td>
+                    <td>STR insert1</td>
+                    <td class="status-cell" data-row="12" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td>
+                    <td class="status-cell" data-row="12" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td>
+                    <td class="status-cell" data-row="12" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td>
+                    <td>Nakarin</td>
+                    <td>Block 1</td>
+                    <td class="maker-cell maker-tAC">TAC</td>
+                    <td class="status-cell" data-row="12" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td>
+                    <td class="status-cell" data-row="12" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td>
+                    <td class="status-cell" data-row="12" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td>
+                    <td class="status-cell" data-row="12" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td>
+                    <td class="status-cell" data-row="12" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td>
+                </tr>
+                <tr>
+                    <td>13</td>
+                    <td>XAE768-0124</td>
+                    <td>XAE768-0424</td>
+                    <td>XAS137-0124</td>
+                    <td>STR insert2</td>
+                    <td class="status-cell" data-row="13" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td>
+                    <td class="status-cell" data-row="13" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td>
+                    <td class="status-cell" data-row="13" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td>
+                    <td>Pongporn</td>
+                    <td>Block 2</td>
+                    <td class="maker-cell maker-tAC">TAC</td>
+                    <td class="status-cell" data-row="13" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td>
+                    <td class="status-cell" data-row="13" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td>
+                    <td class="status-cell" data-row="13" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td>
+                    <td class="status-cell" data-row="13" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td>
+                    <td class="status-cell" data-row="13" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td>
+                </tr>
+                <tr>
+                    <td>14</td>
+                    <td>XAE768-0125</td>
+                    <td>XAE768-0425</td>
+                    <td>XAS137-0125</td>
+                    <td>STR insert3</td>
+                    <td class="status-cell" data-row="14" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td>
+                    <td class="status-cell" data-row="14" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td>
+                    <td class="status-cell" data-row="14" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td>
+                    <td>Kittanun</td>
+                    <td>Block 3</td>
+                    <td class="maker-cell maker-tAC">TAC</td>
+                    <td class="status-cell" data-row="14" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td>
+                    <td class="status-cell" data-row="14" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td>
+                    <td class="status-cell" data-row="14" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td>
+                    <td class="status-cell" data-row="14" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td>
+                    <td class="status-cell" data-row="14" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td>
+                </tr>
+                <tr>
+                    <td>15</td>
+                    <td>XAE768-0126</td>
+                    <td>XAE768-0426</td>
+                    <td>XAS137-0126</td>
+                    <td>STR insert liner1</td>
+                    <td class="status-cell" data-row="15" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td>
+                    <td class="status-cell" data-row="15" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td>
+                    <td class="status-cell" data-row="15" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td>
+                    <td>Nakarin</td>
+                    <td>Block 1</td>
+                    <td class="maker-cell maker-mT400">MT400</td>
+                    <td class="status-cell" data-row="15" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td>
+                    <td class="status-cell" data-row="15" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td>
+                    <td class="status-cell" data-row="15" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td>
+                    <td class="status-cell" data-row="15" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td>
+                    <td class="status-cell" data-row="15" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td>
+                </tr>
+                <tr>
+                    <td>16</td>
+                    <td>XAE768-0127</td>
+                    <td>XAE768-0427</td>
+                    <td>XAS137-0127</td>
+                    <td>STR insert liner2</td>
+                    <td class="status-cell" data-row="16" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td>
+                    <td class="status-cell" data-row="16" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td>
+                    <td class="status-cell" data-row="16" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td>
+                    <td>Pongporn</td>
+                    <td>Block 2</td>
+                    <td class="maker-cell maker-mT400">MT400</td>
+                    <td class="status-cell" data-row="16" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td>
+                    <td class="status-cell" data-row="16" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td>
+                    <td class="status-cell" data-row="16" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td>
+                    <td class="status-cell" data-row="16" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td>
+                    <td class="status-cell" data-row="16" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td>
+                </tr>
+                <tr>
+                    <td>17</td>
+                    <td>XAE768-0128</td>
+                    <td>XAE768-0428</td>
+                    <td>XAS137-0128</td>
+                    <td>STR insert liner3</td>
+                    <td class="status-cell" data-row="17" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td>
+                    <td class="status-cell" data-row="17" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td>
+                    <td class="status-cell" data-row="17" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td>
+                    <td>Kittanun</td>
+                    <td>Block 3</td>
+                    <td class="maker-cell maker-mT400">MT400</td>
+                    <td class="status-cell" data-row="17" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td>
+                    <td class="status-cell" data-row="17" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td>
+                    <td class="status-cell" data-row="17" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td>
+                    <td class="status-cell" data-row="17" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td>
+                    <td class="status-cell" data-row="17" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td>
+                </tr>
+                <tr>
+                    <td>18</td>
+                    <td>XAE768-0129A</td>
+                    <td>XAE768-0429</td>
+                    <td>XAS137-0129</td>
+                    <td>Punch plate insert1</td>
+                    <td class="status-cell" data-row="18" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td>
+                    <td class="status-cell" data-row="18" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td>
+                    <td class="status-cell" data-row="18" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td>
+                    <td>Nakarin</td>
+                    <td>Block 1</td>
+                    <td class="maker-cell maker-tAC">TAC</td>
+                    <td class="status-cell" data-row="18" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td>
+                    <td class="status-cell" data-row="18" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td>
+                    <td class="status-cell" data-row="18" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td>
+                    <td class="status-cell" data-row="18" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td>
+                    <td class="status-cell" data-row="18" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td>
+                </tr>
+                <tr>
+                    <td>19</td>
+                    <td>XAE768-0130</td>
+                    <td>XAE768-0430</td>
+                    <td>XAS137-0130</td>
+                    <td>Punch plate insert2</td>
+                    <td class="status-cell" data-row="19" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td>
+                    <td class="status-cell" data-row="19" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td>
+                    <td class="status-cell" data-row="19" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td>
+                    <td>Pongporn</td>
+                    <td>Block 2</td>
+                    <td class="maker-cell maker-tAC">TAC</td>
+                    <td class="status-cell" data-row="19" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td>
+                    <td class="status-cell" data-row="19" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td>
+                    <td class="status-cell" data-row="19" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td>
+                    <td class="status-cell" data-row="19" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td>
+                    <td class="status-cell" data-row="19" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td>
+                </tr>
+                <tr>
+                    <td>20</td>
+                    <td>XAE768-0131</td>
+                    <td>XAE768-0431</td>
+                    <td>XAS137-0131</td>
+                    <td>Punch plate insert3</td>
+                    <td class="status-cell" data-row="20" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td>
+                    <td class="status-cell" data-row="20" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td>
+                    <td class="status-cell" data-row="20" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td>
+                    <td>Kittanun</td>
+                    <td>Block 3</td>
+                    <td class="maker-cell maker-tAC">TAC</td>
+                    <td class="status-cell" data-row="20" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td>
+                    <td class="status-cell" data-row="20" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td>
+                    <td class="status-cell" data-row="20" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td>
+                    <td class="status-cell" data-row="20" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td>
+                    <td class="status-cell" data-row="20" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td>
+                </tr>
+                <!-- Rows 21 to 80 follow the same structure -->
+                 <tr><td>21</td><td>XAE768-0132A</td><td>XAE768-0432</td><td>XAS137-0132</td><td>Count cut punch upper cam</td><td class="status-cell" data-row="21" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="21" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="21" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td></td><td>Original</td><td class="maker-cell maker-mT400">MT400</td><td class="status-cell" data-row="21" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="21" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="21" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="21" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="21" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>22</td><td>XAE768-0133</td><td>XAE768-0433</td><td>XAS137-0133</td><td>Count cut punch lower cam</td><td class="status-cell" data-row="22" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="22" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="22" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td>Nakarin</td><td>Block 1</td><td class="maker-cell maker-gate-asia">Gate asia</td><td class="status-cell" data-row="22" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="22" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="22" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="22" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="22" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>23</td><td>XAE768-0134</td><td>XAE768-0434</td><td>XAS137-0134</td><td>Count cut cam</td><td class="status-cell" data-row="23" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="23" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="23" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td></td><td>Original</td><td class="maker-cell maker-mT400">MT400</td><td class="status-cell" data-row="23" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="23" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="23" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="23" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="23" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>24</td><td>XAE768-0135B</td><td>XAE768-0435</td><td>XAS137-0135</td><td>Detection punch</td><td class="status-cell" data-row="24" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="24" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="24" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td></td><td>Original</td><td class="maker-cell maker-mT400">MT400</td><td class="status-cell" data-row="24" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="24" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="24" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="24" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="24" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>25</td><td>XAE768-0137</td><td>XAE768-0437</td><td>XAS137-0136</td><td>Cam joint</td><td class="status-cell" data-row="25" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="25" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="25" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td></td><td>Original</td><td class="maker-cell maker-gate-asia">Gate asia</td><td class="status-cell" data-row="25" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="25" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="25" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="25" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="25" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>26</td><td>XAE768-0138</td><td>XAE768-0438</td><td>XAS137-0137</td><td>Cylinder mounting plate</td><td class="status-cell" data-row="26" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="26" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="26" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td></td><td>Original</td><td class="maker-cell maker-mT400">MT400</td><td class="status-cell" data-row="26" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="26" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="26" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="26" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="26" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>27</td><td>XAE768-0139</td><td>XAE768-0439</td><td>XAS137-0138</td><td>Separate punch</td><td class="status-cell" data-row="27" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="27" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="27" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td>Kittanun</td><td>Block 3</td><td class="maker-cell maker-mT400">MT400</td><td class="status-cell" data-row="27" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="27" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="27" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="27" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="27" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>28</td><td>XAE768-0142</td><td>XAE768-0442</td><td>XAS137-0139</td><td>Connector bracket</td><td class="status-cell" data-row="28" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="28" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="28" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td></td><td>Original</td><td class="maker-cell maker-mT400">MT400</td><td class="status-cell" data-row="28" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="28" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="28" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="28" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="28" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>29</td><td>XAE768-0153</td><td>XAE768-0453</td><td>XAS137-0140</td><td>Pilot punch(Shark)</td><td class="status-cell" data-row="29" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="29" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="29" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td>Nakarin</td><td>Block 1</td><td class="maker-cell maker-mT400">MT400</td><td class="status-cell" data-row="29" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="29" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="29" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="29" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="29" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>30</td><td>XAD768-0150</td><td>XAE768-0454</td><td>XAS137-0141</td><td>Small upper end block</td><td class="status-cell" data-row="30" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="30" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="30" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td>Pongporn</td><td>Original</td><td class="maker-cell maker-tAC">TAC</td><td class="status-cell" data-row="30" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="30" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="30" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="30" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="30" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>31</td><td>XAD768-0151</td><td>XAE768-0455</td><td>XAS137-0142</td><td>Big upper end block</td><td class="status-cell" data-row="31" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="31" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="31" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td>Pongporn</td><td>Original</td><td class="maker-cell maker-tAC">TAC</td><td class="status-cell" data-row="31" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="31" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="31" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="31" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="31" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>32</td><td>XAE768-0156</td><td>XAE768-0456</td><td>XAS137-0143</td><td>Fixed key 1</td><td class="status-cell" data-row="32" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="32" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="32" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td>Nakarin</td><td>Block 1</td><td class="maker-cell maker-mT400">MT400</td><td class="status-cell" data-row="32" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="32" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="32" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="32" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="32" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>33</td><td>XAE768-0157</td><td>XAE768-0457</td><td>XAS137-0144</td><td>Fixed key 2</td><td class="status-cell" data-row="33" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="33" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="33" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td>Nakarin</td><td>Block 1</td><td class="maker-cell maker-mT400">MT400</td><td class="status-cell" data-row="33" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="33" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="33" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="33" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="33" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>34</td><td>XAE768-0211A</td><td>XAE768-0611</td><td>XAS137-0211</td><td>Die plate</td><td class="status-cell" data-row="34" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="34" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="34" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td></td><td>Original</td><td class="maker-cell maker-tAC">TAC</td><td class="status-cell" data-row="34" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="34" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="34" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="34" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="34" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>35</td><td>XAE768-0212</td><td>XAE768-0612</td><td>XAS137-0212</td><td>Die backing</td><td class="status-cell" data-row="35" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="35" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="35" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td>Kittanun</td><td>Block 3</td><td class="maker-cell maker-gate-asia">Gate asia</td><td class="status-cell" data-row="35" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="35" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="35" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="35" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="35" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>36</td><td>XAE768-0213</td><td>XAE768-0613</td><td>XAS137-0213</td><td>Die holder</td><td class="status-cell" data-row="36" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="36" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="36" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td>Kittanun</td><td>Block 3</td><td class="maker-cell maker-gate-asia">Gate asia</td><td class="status-cell" data-row="36" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="36" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="36" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="36" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="36" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>37</td><td>XAE768-0214B</td><td>XAE768-0614</td><td>XAS137-0214</td><td>Count cut die1</td><td class="status-cell" data-row="37" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="37" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="37" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td>Nakarin</td><td>Block 1</td><td class="maker-cell maker-tAC">TAC</td><td class="status-cell" data-row="37" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="37" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="37" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="37" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="37" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>38</td><td>XAE768-0215B</td><td>XAE768-0615</td><td>XAS137-0215</td><td>Count cut die2</td><td class="status-cell" data-row="38" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="38" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="38" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td>Nakarin</td><td>Block 1</td><td class="maker-cell maker-tAC">TAC</td><td class="status-cell" data-row="38" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="38" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="38" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="38" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="38" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>39</td><td>XAE768-0216</td><td>XAE768-0616</td><td>XAS137-0216</td><td>Pilot cutting die</td><td class="status-cell" data-row="39" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="39" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="39" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td>Nakarin</td><td>Block 1</td><td class="maker-cell maker-tAC">TAC</td><td class="status-cell" data-row="39" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="39" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="39" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="39" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="39" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>40</td><td>XAE768-9217A</td><td>XAE768-0617</td><td>XAS137-0217</td><td>Side cut die2 Side cut die1</td><td class="status-cell" data-row="40" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="40" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="40" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td>Nakarin</td><td>Block 1</td><td class="maker-cell maker-mT400">MT400</td><td class="status-cell" data-row="40" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="40" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="40" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="40" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="40" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>41</td><td>XAE768-9219A</td><td>XAE768-0619</td><td>XAS137-0218</td><td>Side cut die1 Side cut die2</td><td class="status-cell" data-row="41" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="41" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="41" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td>Nakarin</td><td>Block 1</td><td class="maker-cell maker-mT400">MT400</td><td class="status-cell" data-row="41" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="41" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="41" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="41" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="41" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>42</td><td>XAE768-9220A</td><td>XAE768-0620</td><td>XAS137-0219</td><td>Side cut die4 Side cut die3</td><td class="status-cell" data-row="42" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="42" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="42" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td>Nakarin</td><td>Block 1</td><td class="maker-cell maker-mT400">MT400</td><td class="status-cell" data-row="42" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="42" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="42" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="42" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="42" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>43</td><td>XAE768-9221A</td><td>XAE768-0621</td><td>XAS137-0220</td><td>Side cut die5 Side cut die4</td><td class="status-cell" data-row="43" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="43" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="43" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td>Nakarin</td><td>Block 1</td><td class="maker-cell maker-mT400">MT400</td><td class="status-cell" data-row="43" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="43" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="43" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="43" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="43" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>44</td><td>XAE768-9222A</td><td>XAE768-0622</td><td>XAS137-0221</td><td>Side cut die6 Side cut die5</td><td class="status-cell" data-row="44" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="44" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="44" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td>Nakarin</td><td>Block 1</td><td class="maker-cell maker-mT400">MT400</td><td class="status-cell" data-row="44" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="44" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="44" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="44" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="44" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>45</td><td>XAE768-0223</td><td>XAE768-0623</td><td>XAS137-0222</td><td>Side cut die7 Side cut die6 (Liner6)</td><td class="status-cell" data-row="45" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="45" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="45" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td>Nakarin</td><td>Block 1</td><td class="maker-cell maker-gate-asia">Gate asia</td><td class="status-cell" data-row="45" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="45" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="45" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="45" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="45" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>46</td><td>XAE768-0226A</td><td>XAE768-0626</td><td>XAS137-0223</td><td>Small window cutting die1</td><td class="status-cell" data-row="46" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="46" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="46" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td>Pongporn</td><td>Block 2</td><td class="maker-cell maker-tAC">TAC</td><td class="status-cell" data-row="46" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="46" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="46" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="46" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="46" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>47</td><td>XAE768-0227A</td><td>XAE768-0627</td><td>XAS137-0224</td><td>Small window cutting die2</td><td class="status-cell" data-row="47" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="47" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="47" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td>Pongporn</td><td>Block 2</td><td class="maker-cell maker-tAC">TAC</td><td class="status-cell" data-row="47" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="47" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="47" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="47" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="47" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>48</td><td>XAE768-0228A</td><td>XAE768-0628</td><td>XAS137-0225</td><td>Small window cutting die3</td><td class="status-cell" data-row="48" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="48" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="48" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td>Pongporn</td><td>Block 2</td><td class="maker-cell maker-tAC">TAC</td><td class="status-cell" data-row="48" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="48" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="48" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="48" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="48" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>49</td><td>XAE768-0229A</td><td>XAE768-0629</td><td>XAS137-0226</td><td>Small window cutting die4</td><td class="status-cell" data-row="49" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="49" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="49" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td>Pongporn</td><td>Block 2</td><td class="maker-cell maker-tAC">TAC</td><td class="status-cell" data-row="49" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="49" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="49" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="49" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="49" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>50</td><td>XAE768-0235</td><td>XAE768-0635</td><td>XAS137-0227</td><td>Liner1</td><td class="status-cell" data-row="50" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="50" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="50" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td>Pongporn</td><td>Block 2</td><td class="maker-cell maker-mT400">MT400</td><td class="status-cell" data-row="50" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="50" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="50" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="50" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="50" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>51</td><td>XAE768-0236</td><td>XAE768-0636</td><td>XAS137-0228</td><td>Liner2</td><td class="status-cell" data-row="51" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="51" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="51" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td>Pongporn</td><td>Block 2</td><td class="maker-cell maker-mT400">MT400</td><td class="status-cell" data-row="51" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="51" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="51" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="51" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="51" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>52</td><td>XAE768-0242</td><td>XAE768-0642</td><td>XAS137-0229</td><td>Separate die1</td><td class="status-cell" data-row="52" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="52" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="52" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td>Kittanun</td><td>Block 3</td><td class="maker-cell maker-tAC">TAC</td><td class="status-cell" data-row="52" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="52" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="52" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="52" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="52" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>53</td><td>XAE768-0243</td><td>XAE768-0643</td><td>XAS137-0230</td><td>Separate die2</td><td class="status-cell" data-row="53" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="53" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="53" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td>Kittanun</td><td>Block 3</td><td class="maker-cell maker-tAC">TAC</td><td class="status-cell" data-row="53" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="53" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="53" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="53" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="53" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>54</td><td>XAE768-0244</td><td>XAE768-0644</td><td>XAS137-0231</td><td>Liner3</td><td class="status-cell" data-row="54" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="54" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="54" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td>Kittanun</td><td>Block 3</td><td class="maker-cell maker-mT400">MT400</td><td class="status-cell" data-row="54" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="54" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="54" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="54" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="54" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>55</td><td>XAE768-0245</td><td>XAE768-0645</td><td>XAS137-0232</td><td>Liner4</td><td class="status-cell" data-row="55" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="55" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="55" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td>Kittanun</td><td>Block 3</td><td class="maker-cell maker-mT400">MT400</td><td class="status-cell" data-row="55" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="55" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="55" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="55" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="55" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>56</td><td>XAE768-0246</td><td>XAE768-0646</td><td>XAS137-0233</td><td>Die backing insert1</td><td class="status-cell" data-row="56" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="56" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="56" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td>Nakarin</td><td>Block 1</td><td class="maker-cell maker-mT400">MT400</td><td class="status-cell" data-row="56" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="56" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="56" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="56" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="56" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>57</td><td>XAE768-0247A</td><td>XAE768-0647</td><td>XAS137-0234</td><td>Die backing insert2</td><td class="status-cell" data-row="57" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="57" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="57" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td>Pongporn</td><td>Block 2</td><td class="maker-cell maker-gate-asia">Gate asia</td><td class="status-cell" data-row="57" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="57" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="57" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="57" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="57" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>58</td><td>XAE768-0248</td><td>XAE768-0648</td><td>XAS137-0235</td><td>Die backing insert3</td><td class="status-cell" data-row="58" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="58" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="58" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td>Kittanun</td><td>Block 3</td><td class="maker-cell maker-mT400">MT400</td><td class="status-cell" data-row="58" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="58" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="58" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="58" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="58" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>59</td><td>XAE768-0249</td><td>XAE768-0649</td><td>XAS137-0236</td><td>Lifter1</td><td class="status-cell" data-row="59" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="59" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="59" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td></td><td>Original</td><td class="maker-cell maker-mT400">MT400</td><td class="status-cell" data-row="59" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="59" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="59" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="59" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="59" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>60</td><td>XAE768-0250</td><td>XAE768-0650</td><td>XAS137-0237</td><td>Lifter2</td><td class="status-cell" data-row="60" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="60" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="60" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td></td><td>Original</td><td class="maker-cell maker-mT400">MT400</td><td class="status-cell" data-row="60" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="60" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="60" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="60" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="60" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>61</td><td>XAE768-0251</td><td>XAE768-0651</td><td>XAS137-0238</td><td>Start stopper box</td><td class="status-cell" data-row="61" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="61" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="61" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td></td><td>Original</td><td class="maker-cell maker-mT400">MT400</td><td class="status-cell" data-row="61" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="61" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="61" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="61" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="61" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>62</td><td>XAE768-0252</td><td>XAE768-0652</td><td>XAS137-0239</td><td>Start stopper cam</td><td class="status-cell" data-row="62" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="62" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="62" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td>Kittanun</td><td>Block 3</td><td class="maker-cell maker-mT400">MT400</td><td class="status-cell" data-row="62" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="62" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="62" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="62" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="62" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>63</td><td>XAE768-0253</td><td>XAE768-0653</td><td>XAS137-0240</td><td>Fixed STR1</td><td class="status-cell" data-row="63" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="63" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="63" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td>Kittanun</td><td>Block 3</td><td class="maker-cell maker-mT400">MT400</td><td class="status-cell" data-row="63" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="63" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="63" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="63" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="63" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>64</td><td>XAE768-0254</td><td>XAE768-0654</td><td>XAS137-0241</td><td>Fixed STR2</td><td class="status-cell" data-row="64" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="64" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="64" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td>Kittanun</td><td>Block 3</td><td class="maker-cell maker-mT400">MT400</td><td class="status-cell" data-row="64" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="64" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="64" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="64" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="64" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>65</td><td>XAE768-0255</td><td>XAE768-0655</td><td>XAS137-0242</td><td>Fixed STR3</td><td class="status-cell" data-row="65" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="65" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="65" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td>Kittanun</td><td>Block 3</td><td class="maker-cell maker-mT400">MT400</td><td class="status-cell" data-row="65" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="65" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="65" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="65" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="65" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>66</td><td>XAE768-0256</td><td>XAE768-0656</td><td>XAS137-0243</td><td>Fixed STR4</td><td class="status-cell" data-row="66" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="66" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="66" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td>Kittanun</td><td>Block 3</td><td class="maker-cell maker-mT400">MT400</td><td class="status-cell" data-row="66" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="66" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="66" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="66" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="66" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>67</td><td>XAE768-0257</td><td>XAE768-0657</td><td>XAS137-0244</td><td>Fixed STR5</td><td class="status-cell" data-row="67" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="67" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="67" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td>Kittanun</td><td>Block 3</td><td class="maker-cell maker-mT400">MT400</td><td class="status-cell" data-row="67" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="67" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="67" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="67" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="67" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>68</td><td>XAE768-0258</td><td>XAE768-0658</td><td>XAS137-0245</td><td>Fixed STR6</td><td class="status-cell" data-row="68" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="68" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="68" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td>Kittanun</td><td>Block 3</td><td class="maker-cell maker-mT400">MT400</td><td class="status-cell" data-row="68" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="68" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="68" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="68" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="68" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>69</td><td>XAE768-0259</td><td>XAE768-0659</td><td>XAS137-0246</td><td>Fixed STR base</td><td class="status-cell" data-row="69" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="69" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="69" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td></td><td>Original</td><td class="maker-cell maker-mT400">MT400</td><td class="status-cell" data-row="69" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="69" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="69" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="69" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="69" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>70</td><td>XAE768-0260A</td><td>XAE768-0660</td><td>XAS137-0247</td><td>Side cut stopper</td><td class="status-cell" data-row="70" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="70" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="70" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td>Nakarin</td><td>Block 1</td><td class="maker-cell maker-gate-asia">Gate asia</td><td class="status-cell" data-row="70" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="70" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="70" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="70" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="70" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>71</td><td>XAE768-0270</td><td>XAE768-0670</td><td>XAS137-0248</td><td>Material passing cut die Liner7</td><td class="status-cell" data-row="71" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="71" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="71" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td>Pongporn</td><td>Block 2</td><td class="maker-cell maker-gate-asia">Gate asia</td><td class="status-cell" data-row="71" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="71" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="71" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="71" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="71" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>72</td><td>XAE768-0271A</td><td>XAE768-0671</td><td>XAS137-0249</td><td>External cutting die1 for 110</td><td class="status-cell" data-row="72" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="72" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="72" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td>Pongporn</td><td>Block 2</td><td class="maker-cell maker-tAC">TAC</td><td class="status-cell" data-row="72" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="72" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="72" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="72" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="72" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>73</td><td>XAE768-0273</td><td>XAE768-0673</td><td>XAS137-0250</td><td>External cutting die2-1</td><td class="status-cell" data-row="73" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="73" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="73" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td>Kittanun</td><td>Block 3</td><td class="maker-cell maker-tAC">TAC</td><td class="status-cell" data-row="73" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="73" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="73" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="73" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="73" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>74</td><td>XAE768-0274</td><td>XAE768-0674</td><td>XAS137-0251</td><td>External cutting die2-2</td><td class="status-cell" data-row="74" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="74" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="74" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td>Kittanun</td><td>Block 3</td><td class="maker-cell maker-tAC">TAC</td><td class="status-cell" data-row="74" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="74" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="74" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="74" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="74" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>75</td><td>XAE768-0276</td><td>XAE768-0676</td><td>XAS137-0252</td><td>Die fixed key</td><td class="status-cell" data-row="75" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="75" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="75" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td>Pongporn</td><td>Block 2</td><td class="maker-cell maker-mT400">MT400</td><td class="status-cell" data-row="75" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="75" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="75" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="75" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="75" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>76</td><td>XAD629-0223</td><td>XAE768-0677</td><td>XAS137-0253</td><td>Free washer</td><td class="status-cell" data-row="76" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="76" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="76" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td></td><td>Original</td><td class="maker-cell maker-mT400">MT400</td><td class="status-cell" data-row="76" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="76" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="76" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="76" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="76" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>77</td><td>XAE768-0678</td><td>XAE768-0678</td><td>XAS137-0254</td><td>Liner5</td><td class="status-cell" data-row="77" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="77" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="77" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td>Nakarin</td><td>Block 1</td><td class="maker-cell maker-mT400">MT400</td><td class="status-cell" data-row="77" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="77" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="77" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="77" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="77" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>78</td><td>XAE768-0679</td><td>XAE768-0679</td><td>XAS137-0255</td><td>Die fixed key 2</td><td class="status-cell" data-row="78" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="78" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="78" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td>Nakarin</td><td>Block 1</td><td class="maker-cell maker-mT400">MT400</td><td class="status-cell" data-row="78" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="78" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="78" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="78" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="78" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>79</td><td>XAD768-0280</td><td>XAE768-0680</td><td>XAS137-0256</td><td>Small lower end block</td><td class="status-cell" data-row="79" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="79" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="79" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td>Pongporn</td><td>Original</td><td class="maker-cell maker-tAC">TAC</td><td class="status-cell" data-row="79" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="79" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="79" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="79" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="79" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+<tr><td>80</td><td>XAD768-0281</td><td>XAE768-0681</td><td>XAS137-0257</td><td>Big lower end block</td><td class="status-cell" data-row="80" data-col="line" tabindex="0" role="button" aria-label="Line status, unchecked"></td><td class="status-cell" data-row="80" data-col="gqs" tabindex="0" role="button" aria-label="GQS status, unchecked"></td><td class="status-cell" data-row="80" data-col="po" tabindex="0" role="button" aria-label="P/O status, unchecked"></td><td>Pongporn</td><td>Original</td><td class="maker-cell maker-tAC">TAC</td><td class="status-cell" data-row="80" data-col="dwg" tabindex="0" role="button" aria-label="DWG status, unchecked"></td><td class="status-cell" data-row="80" data-col="sdrw" tabindex="0" role="button" aria-label="SDRW status, unchecked"></td><td class="status-cell" data-row="80" data-col="dxf" tabindex="0" role="button" aria-label="DXF status, unchecked"></td><td class="status-cell" data-row="80" data-col="3d" tabindex="0" role="button" aria-label="3D status, unchecked"></td><td class="status-cell" data-row="80" data-col="pdf" tabindex="0" role="button" aria-label="PDF status, unchecked"></td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div id="managerView" class="container">
+        <!-- Progress summary will be generated here by JavaScript -->
+        <div id="progressSummary"></div>
+        <div class="history-panel" id="historyPanel" style="display: none;">
+            <h2>Recent Changes</h2>
+            <div id="historyList"></div>
+        </div>
+    </div>
+
+    <!-- Batch Update Modal -->
+    <div id="batchModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Batch Update Status</h2>
+                <span class="close-modal" aria-label="Close modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p>Select the status to apply to all visible items:</p>
+                <div>
+                    <label><input type="radio" name="batchStatus" value="0" checked> Unchecked (☐)</label><br>
+                    <label><input type="radio" name="batchStatus" value="1"> In Progress (🔄)</label><br>
+                    <label><input type="radio" name="batchStatus" value="2"> Completed (✅)</label>
+                </div>
+                <p style="margin-top: 15px;">Select which columns to update:</p>
+                <div>
+                    <label><input type="checkbox" class="batch-column" value="line" checked> Line</label><br>
+                    <label><input type="checkbox" class="batch-column" value="gqs" checked> GQS</label><br>
+                    <label><input type="checkbox" class="batch-column" value="po" checked> P/O</label><br>
+                    <label><input type="checkbox" class="batch-column" value="dwg" checked> DWG</label><br>
+                    <label><input type="checkbox" class="batch-column" value="sdrw" checked> SDRW</label><br>
+                    <label><input type="checkbox" class="batch-column" value="dxf" checked> DXF</label><br>
+                    <label><input type="checkbox" class="batch-column" value="3d" checked> 3D</label><br>
+                    <label><input type="checkbox" class="batch-column" value="pdf" checked> PDF</label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancelBatch">Cancel</button>
+                <button id="applyBatch">Apply</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div class="notification-container" id="notificationContainer" aria-live="polite"></div>
+
+    <div class="footer">
+        <p>Dashboard v6.1 | Enhanced with accessibility, batch operations, and history tracking</p>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Element selectors
+            const designerView = document.getElementById('designerView');
+            const managerView = document.getElementById('managerView');
+            const showDesignerBtn = document.getElementById('showDesignerBtn');
+            const showManagerBtn = document.getElementById('showManagerBtn');
+            const table = document.getElementById('drawingTable');
+            const statusCells = table.querySelectorAll('.status-cell');
+            const filterInputs = document.querySelectorAll('.filter-input');
+            const progressSummaryDiv = document.getElementById('progressSummary');
+            const globalSearch = document.getElementById('globalSearch');
+            const clearFiltersBtn = document.getElementById('clearFilters');
+            const batchUpdateBtn = document.getElementById('batchUpdate');
+            const exportDataBtn = document.getElementById('exportData');
+            const showHistoryBtn = document.getElementById('showHistory');
+            const historyPanel = document.getElementById('historyPanel');
+            const historyList = document.getElementById('historyList');
+            const batchModal = document.getElementById('batchModal');
+            const closeModal = document.querySelector('.close-modal');
+            const cancelBatch = document.getElementById('cancelBatch');
+            const applyBatch = document.getElementById('applyBatch');
+            const notificationContainer = document.getElementById('notificationContainer');
+            
+            const statuses = ['status-unchecked', 'status-progress', 'status-checked'];
+            const statusLabels = ['unchecked', 'in progress', 'completed'];
+            let sortColumn = -1;
+            let sortDirection = 'asc';
+            let changeHistory = [];
+            
+            // Initialize history from localStorage
+            try {
+                const savedHistory = localStorage.getItem('dashboardHistory');
+                if (savedHistory) {
+                    changeHistory = JSON.parse(savedHistory);
+                }
+            } catch (e) {
+                console.error('Error loading history:', e);
+            }
+
+            // Debounce utility
+            function debounce(fn, delay = 200) {
+                let t;
+                return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), delay); };
+            }
+
+            function saveFilters() {
+                const payload = { global: globalSearch.value };
+                filterInputs.forEach(input => { payload[input.dataset.column] = input.value; });
+                try { localStorage.setItem('dashboardFilters', JSON.stringify(payload)); } catch {}
+            }
+
+            function loadFilters() {
+                try {
+                    const saved = JSON.parse(localStorage.getItem('dashboardFilters') || '{}');
+                    globalSearch.value = saved.global || '';
+                    filterInputs.forEach(input => { input.value = saved[input.dataset.column] || ''; });
+                } catch {}
+            }
+            
+            // Function to show notifications
+            function showNotification(message, type = 'success') {
+                const notification = document.createElement('div');
+                notification.className = `notification ${type}`;
+                notification.textContent = message;
+                notificationContainer.appendChild(notification);
+                
+                setTimeout(() => {
+                    notification.style.opacity = '0';
+                    setTimeout(() => {
+                        if (notification.parentNode === notificationContainer) {
+                            notificationContainer.removeChild(notification);
+                        }
+                    }, 300);
+                }, 3000);
+            }
+            
+            // Function to add to history
+            function addToHistory(row, col, oldStatus, newStatus, partName) {
+                const timestamp = new Date().toLocaleString();
+                const historyItem = {
+                    timestamp,
+                    row,
+                    col,
+                    oldStatus: statusLabels[oldStatus],
+                    newStatus: statusLabels[newStatus],
+                    partName
+                };
+                
+                changeHistory.unshift(historyItem);
+                
+                // Keep only last 50 items
+                if (changeHistory.length > 50) {
+                    changeHistory = changeHistory.slice(0, 50);
+                }
+                
+                // Save to localStorage
+                try {
+                    localStorage.setItem('dashboardHistory', JSON.stringify(changeHistory));
+                } catch (e) {
+                    console.error('Error saving history:', e);
+                    showNotification('History could not be saved due to storage limitations', 'warning');
+                }
+            }
+            
+            // Function to load saved statuses from Local Storage
+            function loadStatuses() {
+                statusCells.forEach(cell => {
+                    const row = cell.dataset.row;
+                    const col = cell.dataset.col;
+                    const key = `status-${row}-${col}`;
+                    
+                    try {
+                        const saved = localStorage.getItem(key);
+                        const savedStatusIndex = Number.parseInt(saved, 10);
+                        
+                        if (!Number.isNaN(savedStatusIndex)) {
+                            cell.className = 'status-cell ' + statuses[savedStatusIndex];
+                            // Update aria-label
+                            cell.setAttribute('aria-label', `${col} status, ${statusLabels[savedStatusIndex]}`);
+                        } else {
+                            cell.classList.add(statuses[0]);
+                        }
+                    } catch (e) {
+                        console.error('Error loading status:', e);
+                        cell.classList.add(statuses[0]);
+                    }
+                });
+            }
+
+            // Function to handle clicks on status cells
+            function handleStatusClick(e) {
+                if (e.target.classList.contains('status-cell')) {
+                    const cell = e.target;
+                    const currentStatus = Array.from(cell.classList).find(cls => statuses.includes(cls));
+                    const currentIndex = statuses.indexOf(currentStatus);
+                    
+                    const nextIndex = (currentIndex + 1) % statuses.length;
+                    
+                    // Get part name for history
+                    const row = cell.closest('tr');
+                    const partName = row.cells[1].textContent;
+                    
+                    // Add to history
+                    addToHistory(
+                        cell.dataset.row,
+                        cell.dataset.col,
+                        currentIndex,
+                        nextIndex,
+                        partName
+                    );
+                    
+                    cell.classList.remove(currentStatus);
+                    cell.classList.add(statuses[nextIndex]);
+                    
+                    // Update aria-label
+                    cell.setAttribute('aria-label', `${cell.dataset.col} status, ${statusLabels[nextIndex]}`);
+                    
+                    // Save status to Local Storage
+                    const rowId = cell.dataset.row;
+                    const colId = cell.dataset.col;
+                    const key = `status-${rowId}-${colId}`;
+                    
+                    try {
+                        localStorage.setItem(key, String(nextIndex));
+                    } catch (e) {
+                        console.error('Error saving status:', e);
+                        showNotification('Status could not be saved due to storage limitations', 'error');
+                    }
+
+                    // Update the manager view after a status change
+                    updateManagerView();
+                    
+                    // Show notification
+                    showNotification(`Status updated to ${statusLabels[nextIndex]}`);
+                }
+            }
+            
+            // Function to handle keyboard navigation
+            function handleKeyDown(e) {
+                if (e.target.classList.contains('status-cell')) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleStatusClick(e);
+                    }
+                }
+            }
+
+            // Function to filter the table in Designer View
+            function filterTable() {
+                const tableRows = table.querySelectorAll('tbody tr');
+                const globalSearchValue = globalSearch.value.toUpperCase();
+                const filterValues = Array.from(filterInputs).map(input => input.value.toUpperCase());
+
+                tableRows.forEach(row => {
+                    let display = true;
+                    const cells = row.cells;
+                    
+                    // Global search
+                    if (globalSearchValue !== '') {
+                        let rowMatches = false;
+                        for (let i = 0; i < cells.length; i++) {
+                            if (cells[i].textContent.toUpperCase().includes(globalSearchValue)) {
+                                rowMatches = true;
+                                break;
+                            }
+                        }
+                        if (!rowMatches) display = false;
+                    }
+                    
+                    // Column-specific filters
+                    filterValues.forEach((filterText, index) => {
+                        if (filterText !== '' && display) {
+                            const columnIndex = filterInputs[index].dataset.column;
+                            const cellText = cells[columnIndex] ? cells[columnIndex].textContent.toUpperCase() : '';
+                            if (!cellText.includes(filterText)) {
+                                display = false;
+                            }
+                        }
+                    });
+                    
+                    row.style.display = display ? '' : 'none';
+                });
+            }
+            
+            // Function to clear all filters
+            function clearFilters() {
+                globalSearch.value = '';
+                filterInputs.forEach(input => input.value = '');
+                saveFilters();
+                filterTable();
+                showNotification('All filters cleared');
+            }
+            
+            // Function to sort table
+            function sortTable(column) {
+                const tableBody = table.querySelector('tbody');
+                const rows = Array.from(tableBody.querySelectorAll('tr'));
+                
+                // Toggle sort direction if same column
+                if (sortColumn === column) {
+                    sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+                } else {
+                    sortColumn = column;
+                    sortDirection = 'asc';
+                }
+                
+                // Update header classes and aria-sort
+                const headers = table.querySelectorAll('th');
+                headers.forEach(header => {
+                    header.classList.remove('sorted-asc', 'sorted-desc');
+                    header.setAttribute('aria-sort', 'none');
+                    if (Number(header.dataset.column) === column) {
+                        header.classList.add(sortDirection === 'asc' ? 'sorted-asc' : 'sorted-desc');
+                        header.setAttribute('aria-sort', sortDirection === 'asc' ? 'ascending' : 'descending');
+                    }
+                });
+                
+                // Sort rows
+                rows.sort((a, b) => {
+                    const aValue = a.cells[column].textContent.trim();
+                    const bValue = b.cells[column].textContent.trim();
+                    
+                    // Try to parse as numbers
+                    const aNum = parseFloat(aValue);
+                    const bNum = parseFloat(bValue);
+                    
+                    if (!Number.isNaN(aNum) && !Number.isNaN(bNum)) {
+                        return sortDirection === 'asc' ? aNum - bNum : bNum - aNum;
+                    }
+                    
+                    // Sort as strings
+                    return sortDirection === 'asc' 
+                        ? aValue.localeCompare(bValue) 
+                        : bValue.localeCompare(aValue);
+                });
+                
+                // Re-append sorted rows
+                rows.forEach(row => tableBody.appendChild(row));
+            }
+            
+            // Function to export data to CSV (visible rows only)
+            function exportToCSV() {
+                const headers = [];
+                const rows = [];
+                
+                // Get headers
+                const headerCells = table.querySelectorAll('thead th');
+                headerCells.forEach(cell => {
+                    // Prefer the first text node before other children
+                    const firstNode = cell.childNodes[0];
+                    const headerText = (firstNode && firstNode.nodeType === Node.TEXT_NODE ? firstNode.textContent : cell.textContent)
+                      .replace('⇅', '')
+                      .trim();
+                    headers.push(headerText);
+                });
+                
+                // Get visible data rows
+                const dataRows = Array.from(table.querySelectorAll('tbody tr'))
+                    .filter(row => row.style.display !== 'none');
+                
+                dataRows.forEach(row => {
+                    const rowData = [];
+                    const cells = row.querySelectorAll('td');
+                    
+                    cells.forEach((cell) => {
+                        if (cell.classList.contains('status-cell')) {
+                            // Get status text
+                            const statusClass = Array.from(cell.classList).find(cls => statuses.includes(cls));
+                            const statusIndex = statuses.indexOf(statusClass);
+                            rowData.push(statusLabels[statusIndex]);
+                        } else {
+                            rowData.push(cell.textContent.trim());
+                        }
+                    });
+                    
+                    rows.push(rowData);
+                });
+                
+                // Create CSV content
+                let csvContent = headers.join(',') + '\n';
+                rows.forEach(row => {
+                    csvContent += row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',') + '\n';
+                });
+                
+                // Create download link
+                const blob = new Blob([csvContent], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `drawing_status_${new Date().toISOString().slice(0, 10)}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                showNotification('Data exported (visible rows)');
+            }
+            
+            // Function to show history
+            function showHistory() {
+                historyPanel.style.display = historyPanel.style.display === 'none' ? 'block' : 'none';
+                
+                if (historyPanel.style.display === 'block') {
+                    // Update history list
+                    historyList.innerHTML = '';
+                    
+                    if (changeHistory.length === 0) {
+                        historyList.innerHTML = '<div class="history-item">No changes recorded yet</div>';
+                    } else {
+                        changeHistory.forEach(item => {
+                            const historyItem = document.createElement('div');
+                            historyItem.className = 'history-item';
+                            historyItem.innerHTML = `
+                                <span class="history-time">${item.timestamp}</span>
+                                ${item.partName} - ${item.col}: ${item.oldStatus} → ${item.newStatus}
+                            `;
+                            historyList.appendChild(historyItem);
+                        });
+                    }
+                }
+            }
+            
+            // Function to apply batch update
+            function applyBatchUpdate() {
+                const selectedStatus = Number(document.querySelector('input[name="batchStatus"]:checked').value);
+                const selectedColumns = Array.from(document.querySelectorAll('.batch-column:checked'))
+                    .map(cb => cb.value);
+                
+                if (selectedColumns.length === 0) {
+                    showNotification('Please select at least one column to update', 'warning');
+                    return;
+                }
+                
+                const visibleRows = Array.from(table.querySelectorAll('tbody tr'))
+                    .filter(row => row.style.display !== 'none');
+                
+                let updateCount = 0;
+                
+                visibleRows.forEach(row => {
+                    selectedColumns.forEach(col => {
+                        const cell = row.querySelector(`.status-cell[data-col="${col}"]`);
+                        if (cell) {
+                            const currentStatus = Array.from(cell.classList).find(cls => statuses.includes(cls));
+                            const currentIndex = statuses.indexOf(currentStatus);
+                            
+                            if (currentIndex !== selectedStatus) {
+                                const partName = row.cells[1].textContent;
+                                
+                                // Add to history
+                                addToHistory(
+                                    cell.dataset.row,
+                                    cell.dataset.col,
+                                    currentIndex,
+                                    selectedStatus,
+                                    partName
+                                );
+                                
+                                cell.classList.remove(currentStatus);
+                                cell.classList.add(statuses[selectedStatus]);
+                                
+                                // Update aria-label
+                                cell.setAttribute('aria-label', `${cell.dataset.col} status, ${statusLabels[selectedStatus]}`);
+                                
+                                // Save to localStorage
+                                const key = `status-${cell.dataset.row}-${cell.dataset.col}`;
+                                try {
+                                    localStorage.setItem(key, String(selectedStatus));
+                                } catch (e) {
+                                    console.error('Error saving status:', e);
+                                }
+                                
+                                updateCount++;
+                            }
+                        }
+                    });
+                });
+                
+                batchModal.style.display = 'none';
+                updateManagerView();
+                showNotification(`Updated ${updateCount} items to ${statusLabels[selectedStatus]}`);
+            }
+            
+            // Function to calculate and render the Manager View
+            function updateManagerView() {
+                const rows = Array.from(table.querySelectorAll('tbody tr'));
+                let totalTasks = 0;
+                let completedTasks = 0;
+                const picProgress = {};
+                const makerProgress = {};
+
+                rows.forEach(row => {
+                    const cells = row.cells;
+                    const picName = cells[8].textContent.trim() || 'Unassigned';
+                    const makerName = cells[10].textContent.trim() || 'Unassigned';
+
+                    if (!picProgress[picName]) picProgress[picName] = { completed: 0, total: 0 };
+                    if (!makerProgress[makerName]) makerProgress[makerName] = { completed: 0, total: 0 };
+
+                    const checkableCells = row.querySelectorAll('.status-cell');
+                    checkableCells.forEach(cell => {
+                        totalTasks++;
+                        picProgress[picName].total++;
+                        makerProgress[makerName].total++;
+                        if (cell.classList.contains('status-checked')) {
+                            completedTasks++;
+                            picProgress[picName].completed++;
+                            makerProgress[makerName].completed++;
+                        }
+                    });
+                });
+
+                let summaryHTML = '';
+
+                // Overall Progress
+                const overallPercentage = totalTasks > 0 ? ((completedTasks / totalTasks) * 100).toFixed(1) : 0;
+                summaryHTML += `
+                    <div class="manager-section">
+                        <h2>Overall Project Progress</h2>
+                        <div class="progress-item">
+                            <div class="progress-label">
+                                <span>Total Completion</span>
+                                <span>${completedTasks} / ${totalTasks} Tasks</span>
+                            </div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar" style="width: ${overallPercentage}%">${overallPercentage}%</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // Progress by PIC
+                summaryHTML += '<div class="manager-section"><h2>Progress by PIC</h2>';
+                for (const pic in picProgress) {
+                    const data = picProgress[pic];
+                    const percentage = data.total > 0 ? ((data.completed / data.total) * 100).toFixed(1) : 0;
+                    summaryHTML += `
+                        <div class="progress-item">
+                            <div class="progress-label">
+                                <span>${pic}</span>
+                                <span>${data.completed} / ${data.total}</span>
+                            </div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar" style="width: ${percentage}%">${percentage}%</div>
+                            </div>
+                        </div>`;
+                }
+                summaryHTML += '</div>';
+
+                // Progress by Maker
+                summaryHTML += '<div class="manager-section"><h2>Progress by Maker</h2>';
+                for (const maker in makerProgress) {
+                    const data = makerProgress[maker];
+                    const percentage = data.total > 0 ? ((data.completed / data.total) * 100).toFixed(1) : 0;
+                    summaryHTML += `
+                        <div class="progress-item">
+                            <div class="progress-label">
+                                <span>${maker}</span>
+                                <span>${data.completed} / ${data.total}</span>
+                            </div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar" style="width: ${percentage}%">${percentage}%</div>
+                            </div>
+                        </div>`;
+                }
+                summaryHTML += '</div>';
+
+                progressSummaryDiv.innerHTML = summaryHTML;
+            }
+
+            // Event Listeners for switching views
+            showDesignerBtn.addEventListener('click', () => {
+                designerView.style.display = 'block';
+                managerView.style.display = 'none';
+                showDesignerBtn.classList.add('active');
+                showManagerBtn.classList.remove('active');
+            });
+
+            showManagerBtn.addEventListener('click', () => {
+                designerView.style.display = 'none';
+                managerView.style.display = 'block';
+                showManagerBtn.classList.add('active');
+                showDesignerBtn.classList.remove('active');
+                updateManagerView(); // Ensure data is fresh when switching
+            });
+            
+            // Event Listeners for table headers (sorting)
+            table.querySelectorAll('th').forEach(header => {
+                header.addEventListener('click', (e) => {
+                    if (e.target.closest('input')) return; // don't sort while typing
+                    const column = Number(header.dataset.column);
+                    if (!Number.isNaN(column)) {
+                        sortTable(column);
+                    }
+                });
+            });
+            
+            // Event Listeners for toolbar buttons
+            clearFiltersBtn.addEventListener('click', clearFilters);
+            batchUpdateBtn.addEventListener('click', () => {
+                batchModal.style.display = 'block';
+            });
+            exportDataBtn.addEventListener('click', exportToCSV);
+            showHistoryBtn.addEventListener('click', showHistory);
+            
+            // Event Listeners for modal
+            closeModal.addEventListener('click', () => {
+                batchModal.style.display = 'none';
+            });
+            cancelBatch.addEventListener('click', () => {
+                batchModal.style.display = 'none';
+            });
+            applyBatch.addEventListener('click', applyBatchUpdate);
+            
+            // Close modal when clicking outside
+            window.addEventListener('click', (e) => {
+                if (e.target === batchModal) {
+                    batchModal.style.display = 'none';
+                }
+            });
+            // Close modal on Escape
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && batchModal.style.display === 'block') {
+                    batchModal.style.display = 'none';
+                }
+            });
+
+            // Add other event listeners
+            table.addEventListener('click', handleStatusClick);
+            table.addEventListener('keydown', handleKeyDown);
+
+            const debouncedFilter = debounce(() => { filterTable(); }, 200);
+            filterInputs.forEach(input => input.addEventListener('input', () => { saveFilters(); debouncedFilter(); }));
+            globalSearch.addEventListener('input', () => { saveFilters(); debouncedFilter(); });
+
+            // Initial load
+            loadFilters();
+            filterTable();
+            loadStatuses();
+            updateManagerView(); // Initial calculation for manager view
+        });
+    </script>
+</body>
+</html>
